@@ -1,0 +1,20 @@
+axes.titlesize : 24
+axes.labelsize : 20
+axes.grid : True
+axes.axisbelow : True
+lines.linewidth : 3
+lines.markersize : 10
+xtick.labelsize : 16
+ytick.labelsize : 16
+
+figure.dpi : 300
+figure.figsize : 12, 9
+
+grid.color : "#d3d3d3"
+
+legend.frameon : True
+legend.fontsize : 15
+figure.constrained_layout.use : True
+legend.title_fontsize : 16
+
+savefig.bbox : tight

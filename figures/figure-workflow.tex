@@ -1,0 +1,39 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usetikzlibrary{positioning, arrows.meta}
+
+\begin{document}
+\begin{tikzpicture}[node distance=1.5cm, auto, thick, 
+                    every node/.style={rectangle, draw=black, rounded corners, text centered, minimum width=3cm, minimum height=1cm, scale=1.5, font=\large},
+                    every edge/.style={draw, -{Latex[scale=1.0]}}]
+
+    % Nodes
+    \node (node1) [align=center] {Define generative model\\[0.5em]$p(y, \theta)$};
+    \node[below=of node1, align=center] (node3) {Prior predictive checks\\[0.5em] \includegraphics[width=5cm]{prior-pred-flow.png}};
+    \node[left=of node3, align=center] (node2) {Simulation-based calibration\\[0.5em] \includegraphics[width=5cm]{sbc-flow.png}};
+    \node[right=of node3, align=center] (node4) {Posterior predictive checks\\[0.5em]\includegraphics[width=5cm]{post-pred-flow.png}};
+    \node[below=of node3, align=center] (node5) {Leave-future-out cross-validation\\[0.5em]\includegraphics[width=4cm]{figure-backtest.pdf}};
+    \node[below=of node5, align=center] (node6) {Model stacking\\
+    \begin{minipage}{4cm}
+    \begin{align*}
+    p(y_i \mid y_{-i}) &= \sum_{k=1}^{K} w_{ik} p(y_{i} \mid y_{-i}, M_{k})\\
+    w_{ik} &= \mathrm{softmax}(\mathbf{w}_{i1:K}^{*})\\
+    \mathbf{w}_{i}^{*} &= f(\cdot)\\
+    \end{align*}
+    \end{minipage}};
+    \node[below=of node6, align=center] (node7) {Performance diagnostics\\[0.5em]\includegraphics[width=4cm]{perf-flow.png}};
+
+    % Edges
+    \draw (node1) -- (node2);
+    \draw (node1) -- (node3);
+    \draw (node1) -- (node4);
+    \draw (node2) -- (node5);
+    \draw (node3) -- (node5);
+    \draw (node4) -- (node5);
+    \draw (node5) -- (node6);
+    \draw (node6) -- (node7);
+
+\end{tikzpicture}
+\end{document}
