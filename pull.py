@@ -68,13 +68,8 @@ def build_development_data(cells: List[Cell]) -> DataDictType:
         else:
             raw[cell.code] = [cell]
     return {
-        i: np.array(
-            [
-                (cell.paid_loss, cell.incurred_loss, cell.earned_premium)
-                for cell in cells
-            ]
-        )
-        .reshape((10, 10, 3))
+        i: np.array([(cell.paid_loss, cell.earned_premium) for cell in cells])
+        .reshape((10, 10, 2))
         .tolist()
         for i, (_, cells) in enumerate(raw.items())
         if all(cell.paid_loss > 0 for cell in cells)
