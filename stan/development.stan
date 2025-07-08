@@ -12,7 +12,9 @@ data {
   array[T + T_prime] int<lower=0> B;
   array[N] vector[T + T_prime] y;
   int<lower=0, upper=1> prior_only;
+  real<lower=0> prior_scale;
   vector[N] MAX_PRED;
+  int MAX_OBS_DEV;
 }
 
 parameters {
@@ -31,7 +33,7 @@ transformed parameters {
 
   for(n in 1:N){
     alpha[n] = exp(alpha_star[n]);
-    omega[n] =  exp(omega_star[n]);
+    omega[n] = exp(omega_star[n]);
     beta[n] = inv_logit(beta_star[n]);
 
     for(t in 1:T){
@@ -58,13 +60,13 @@ transformed parameters {
 
 model {
   for(n in 1:N){
-    alpha_star[n] ~ normal(0, 1);
-    omega_star[n] ~ normal(0, 1);
-    beta_star[n] ~ normal(-2, .5);
-    gamma[n][1] ~ normal(-3, .25);
-    gamma[n][2] ~ normal(-1, .1);
-    lambda[n][1] ~ normal(-3, .25);
-    lambda[n][2] ~ normal(-1, .1);
+    alpha_star[n] ~ normal(0, 1 * prior_scale);
+    omega_star[n] ~ normal(0, 1 * prior_scale);
+    beta_star[n] ~ normal(-2, .5 * prior_scale);
+    gamma[n][1] ~ normal(-3, .25 * prior_scale);
+    gamma[n][2] ~ normal(-1, .1 * prior_scale);
+    lambda[n][1] ~ normal(-3, .25 * prior_scale);
+    lambda[n][2] ~ normal(-1, .1 * prior_scale);
     if(!prior_only) target += sum(lp[n]);
   }
 }
@@ -72,6 +74,7 @@ model {
 generated quantities {
   array[N] vector<lower=0>[T + T_prime] y_tilde;
   array[N] vector[T + T_prime] log_lik;
+  array[N] vector[M-1] log_ata;
 
   for(n in 1:N){
     for(t in 1:(T + T_prime)){
@@ -82,25 +85,30 @@ generated quantities {
       real lagged_y;
 
       if(lag > 1) {
-        if(isin(B[t], B[1:T]))
+        if(isin(B[t], B[1:T]) || ((lag + year) <= (MAX_OBS_DEV+2)))
           lagged_y = y[n][B[t]];
         else 
           lagged_y = y_tilde[n][B[t]];
       }
       if(lag <= tau && lag > 1){
-        mu = log(lagged_y) + alpha_star[n][lag - 1];
+        log_ata[n][lag - 1] = alpha_star[n][lag - 1];
+        mu = log(lagged_y) + log_ata[n][lag - 1];
         sigma2 = exp(gamma[n][1] + gamma[n][2] * lag + log(lagged_y));
       }
       else if(lag > tau) {
-        mu = log(lagged_y) + omega_star[n] * pow(beta[n], lag);
+        log_ata[n][lag - 1] = omega_star[n] * pow(beta[n], lag);
+        mu = log(lagged_y) + log_ata[n][lag - 1];
         sigma2 = exp(lambda[n][1] + lambda[n][2] * lag + log(lagged_y));
       }
       if(lag == 1){
         y_tilde[n][B[t] + 1] = y[n][B[t] + 1];
         log_lik[n][B[t] + 1] = 0.0;
       } else {
-        y_tilde[n][B[t] + 1] = min([MAX_PRED[n], lognormal_rng(mu, sqrt(sigma2))]);
-        log_lik[n][B[t] + 1] = lognormal_lpdf(y[n][B[t] + 1] | mu, sqrt(sigma2));
+        y_tilde[n][B[t] + 1] = min({MAX_PRED[n], lognormal_rng(mu, sqrt(sigma2))});
+        if (y[n][B[t] + 1] != -999)
+          log_lik[n][B[t] + 1] = lognormal_lpdf(y[n][B[t] + 1] | mu, sqrt(sigma2));
+        else 
+          log_lik[n][B[t] + 1] = 0.0;
       }
     }
   }

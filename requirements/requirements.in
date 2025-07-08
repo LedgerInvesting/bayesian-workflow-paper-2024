@@ -1,4 +1,5 @@
-bayesblend==0.0.8
 cmdstanpy
+scipy
+bayesblend
 matplotlib
-arviz
+dill
